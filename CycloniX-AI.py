@@ -1,6 +1,6 @@
-inputs = [float(input('Ильнур: ')), float(input('Кирилл: ')), float(input('Рома: '))]
+inputs = [float(input('Ilnur: ')), float(input('Kirill: ')), float(input('Roma: '))]
 print('-------')
-targets = [float(input('Ильнур: ')), float(input('Кирилл: ')), float(input('Рома: '))]
+targets = [float(input('Ilnur: ')), float(input('Kirill: ')), float(input('Roma: '))]
 
 weights = [[0.1, 0.2, 0.3],
            [0.3, 0.2, 0.1],
@@ -52,3 +52,4 @@ def final(final_weights, final_inputs):
 weight = forward(inputs, weights, targets)
 pred = final(weight, inputs)
 print(pred)
+
