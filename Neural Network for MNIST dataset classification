@@ -1,0 +1,46 @@
+import numpy as np
+from keras.datasets import mnist
+
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+
+images_train, labels_train = x_train[:1000].reshape(1000, 784) / 255, y_train[:1000]
+targets_train = np.zeros((1000, 10))
+
+for i_tr, l_tr in enumerate(labels_train):
+    targets_train[i_tr][l_tr] = 1
+
+labels_train = targets_train
+
+images_test, labels_test = x_test[:1000].reshape(1000, 784)  / 255, y_test[:1000]
+targets_test = np.zeros((1000, 10))
+
+for i_ts, l_ts in enumerate(labels_test):
+    targets_test[i_ts][l_ts] = 1
+
+labels_test = targets_test
+
+np.random.seed(1)
+weights_01 = 0.2 * np.random.random((784, 32)) - 0.1
+weights_12 = 0.2 * np.random.random((32, 10)) - 0.1
+
+def relu(x):
+    return (x > 0) * x
+
+def relu_derivative(x):
+    return x > 0
+
+for i in range(500):
+    for k in range(len(images_train)):
+        input_layer = images_train[k:k + 1]
+        hidden_layer = relu(np.dot(input_layer, weights_01))
+        output_layer = np.dot(hidden_layer, weights_12)
+
+        #error = np.sum((output_layer - labels_train[k:k + 1]) ** 2)
+        #print(error)
+
+        delta_output = output_layer - labels_train[k:k + 1]
+        delta_hidden = np.dot(delta_output, weights_12.T) * relu_derivative(hidden_layer)
+
+        weights_12 -= np.dot(hidden_layer.T, delta_output) * 0.005
+        weights_01 -= np.dot(input_layer.T, delta_hidden) * 0.005
+print('Done.')
