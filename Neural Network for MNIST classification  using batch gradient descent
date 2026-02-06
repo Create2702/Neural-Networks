@@ -1,0 +1,68 @@
+from keras.datasets import mnist 
+import numpy as np
+
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+
+images = x_train[0:10000].reshape(10000, 784) / 255
+labels = y_train[0:10000]
+
+images_test = x_test[0:10000].reshape(10000, 784) / 255
+labels_test = y_test[0:10000]
+
+targets_test = np.zeros((10000, 10))
+for shir, sir in enumerate(labels_test):
+    targets_test[shir][sir] = 1
+
+targets = np.zeros((10000, 10))
+
+for l, k in enumerate(labels):
+    targets[l][k] = 1
+
+weights_in_hd = 0.2 * np.random.random((784, 132)) - 0.1
+weights_hd_ou = 0.2 * np.random.random((132, 10)) - 0.1
+batch_size = 100
+
+def relu(x):
+    return (x > 0) * x
+
+def relu_derivative(x):
+    return x > 0
+
+for i in range(100):
+    for j in range(len(images) // batch_size):
+        batch_start = j * batch_size
+        batch_end = (j + 1) * batch_size
+
+        layer_in = images[batch_start:batch_end]
+        layer_hd = relu(np.dot(layer_in, weights_in_hd))
+        dropout_mask = np.random.randint(2, size=layer_hd.shape)
+        layer_hd *= dropout_mask * 2
+        layer_ou = np.dot(layer_hd, weights_hd_ou)
+        delta_for_ou = (layer_ou - targets[batch_start:batch_end]) / batch_size
+        delta_for_hd = np.dot(delta_for_ou, weights_hd_ou.T) * relu_derivative(layer_hd)
+        delta_for_hd *= dropout_mask
+
+        weights_hd_ou -= np.dot(layer_hd.T, delta_for_ou) * 0.05
+        weights_in_hd -= np.dot(layer_in.T, delta_for_hd) * 0.05
+
+layer_in = images_test[0:1]
+layer_hd = relu(np.dot(layer_in, weights_in_hd))
+layer_ou = np.dot(layer_hd, weights_hd_ou)
+print(f'Pred: {np.argmax(layer_ou)}')
+print(f'Right answer: {targets_test[0:1]}')
+print(f'Error: {(layer_ou - targets_test[0:1]) ** 2}')
+
+
+layer_in = images_test[1:2]
+layer_hd = relu(np.dot(layer_in, weights_in_hd))
+layer_ou = np.dot(layer_hd, weights_hd_ou)
+print(f'Pred: {np.argmax(layer_ou)}')
+print(f'Right answer: {targets_test[1:2]}')
+print(f'Error: {(layer_ou - targets_test[1:2]) ** 2}')
+
+layer_in = images_test[2:3]
+layer_hd = relu(np.dot(layer_in, weights_in_hd))
+layer_ou = np.dot(layer_hd, weights_hd_ou)
+print(f'Pred: {np.argmax(layer_ou)}')
+print(f'Right answer: {targets_test[2:3]}')
+print(f'Error: {(layer_ou - targets_test[2:3]) ** 2}')
