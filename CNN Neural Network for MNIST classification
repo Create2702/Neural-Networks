@@ -1,0 +1,77 @@
+import numpy as np
+from keras.datasets import mnist
+
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+
+images = x_train[:10000] / 255
+labels = y_train[:10000]
+
+targets = np.zeros((10000, 10))
+
+for v, b in enumerate(labels):
+    targets[v][b] = 1
+
+images_test = x_test[:10000] / 255
+labels_test = y_test[:10000]
+
+targets_test = np.zeros((10000, 10))
+
+for v_t, b_t in enumerate(labels_test):
+    targets_test[v_t][b_t] = 1
+
+batch_size = 100
+
+kernel_scan_r = 3
+kernel_scan_c = 3
+
+num_kernels = 15
+
+hidden_size = ((28 - kernel_scan_r + 1) * (28 - kernel_scan_c + 1)) * num_kernels
+
+kernel_weights = 0.2 * np.random.random((kernel_scan_c * kernel_scan_r, num_kernels)) - 0.1
+weights_hd_ou = 0.2 * np.random.random((hidden_size, 10)) - 0.1
+
+def relu(x):
+    return (x > 0) * x
+
+def relu_derivative(x):
+    return x > 0
+
+def sigmoid(x):
+    return 1 / (1 + np.exp(-x))
+
+def get(array, row_start, row_end, col_start, col_end):
+    section = array[:, row_start:row_end, col_start:col_end]
+    return section.reshape(-1, 1, row_end - row_start, col_end - col_start)
+
+for i in range(300):
+    for j in range(int(len(images) / batch_size)):
+        batch_start = j * batch_size
+        batch_end = (j + 1) * batch_size
+
+        layer_in = images[batch_start:batch_end]
+        sections = []
+
+        for rows in range(28 - kernel_scan_r + 1):
+            for cols in range(28 - kernel_scan_c + 1):
+                piece = get(layer_in, rows, rows + kernel_scan_r, cols, cols + kernel_scan_c)
+                sections.append(piece)
+        expanded_input = np.concatenate(sections, axis=1)
+        shapes = expanded_input.shape
+        flattened_input = expanded_input.reshape(shapes[0] * shapes[1], -1)
+
+        kernel_output_size = np.dot(flattened_input, kernel_weights).shape
+
+        layer_hd = relu(np.dot(flattened_input, kernel_weights).reshape(shapes[0], -1))
+        dropout_mask = np.random.randint(2, size=layer_hd.shape)
+        layer_hd *= dropout_mask * 2
+        layer_ou = np.dot(layer_hd, weights_hd_ou)
+
+        ou_delta = layer_ou - targets[batch_start:batch_end] / batch_size
+        hd_delta = np.dot(ou_delta, weights_hd_ou.T) * relu_derivative(layer_hd)
+        hd_delta *= dropout_mask
+
+        hd_delta = hd_delta.reshape(kernel_output_size)
+
+        weights_hd_ou -= 0.1 * np.dot(layer_hd.T, ou_delta)
+        kernel_weights -= 0.1 * np.dot(flattened_input.T, hd_delta)
